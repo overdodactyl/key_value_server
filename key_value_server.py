@@ -11,7 +11,8 @@ DATA_FILE_PATH = "key_value_data.json"
 LOG_FILE_PATH = "logs/server_logs.log"
 PERSISTENCE_INTERVAL_SECONDS = 10
 DATA_FILE_PATH = os.path.join(DATA_DIRECTORY, "key_value_data.json")
-PORT=8080
+# Default to 8080 if not specified
+PORT = int(os.environ.get("KV_STORE_PORT", 8080))
 HOST="localhost"
 
 # Create data directory if it doesn't exist
