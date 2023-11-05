@@ -28,6 +28,9 @@ def setup_logger(logger, log_file_path):
     """
     logger.setLevel(logging.INFO)
 
+    # Create directory for log file if it does not exist
+    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+
     # Create a file handler and set the log file path
     file_handler = logging.FileHandler(log_file_path)
 
