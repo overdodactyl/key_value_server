@@ -68,4 +68,8 @@ The HAProxy load balancer is configured to run on port 80.  To start the load ba
 
 The default configuration is set to work with up to 3 instances. 
 
+## Examples
 
+For examples of how to run the server and load balancer, see `performance.sh`.
+
+For examples of how to call the API, see `tests.py`.
