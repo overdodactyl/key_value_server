@@ -9,10 +9,14 @@ import os
 DATA_DIRECTORY = "data"
 DATA_FILE_PATH = "key_value_data.json"
 LOG_FILE_PATH = "logs/server_logs.log"
-PERSISTENCE_INTERVAL_SECONDS = 10
+PERSISTENCE_INTERVAL_SåECONDS = 100000
 DATA_FILE_PATH = os.path.join(DATA_DIRECTORY, "key_value_data.json")
-PORT=8080
+# Default to 8080 if not specified
+PORT = int(os.environ.get("KV_STORE_PORT", 8080))
 HOST="localhost"
+
+# Used to identify the instance in the logs and check consistant hashing
+INSTANCE_ID = os.getenv("INSTANCE_ID", "UnknownInstance")
 
 # Create data directory if it doesn't exist
 os.makedirs(DATA_DIRECTORY, exist_ok=True)
@@ -27,12 +31,19 @@ def setup_logger(logger, log_file_path):
     """
     logger.setLevel(logging.INFO)
 
+    print("In setup_logger")
+
+    # Create directory for log file if it does not exist
+    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+
     # Create a file handler and set the log file path
     file_handler = logging.FileHandler(log_file_path)
 
     # Create a formatter for the log messages
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(formatter)
+
+    print("created file handler")
 
     # Add the file handler to the logger
     logger.addHandler(file_handler)
@@ -88,6 +99,11 @@ app = Flask(__name__)
 logger = logging.getLogger("key_value_server")
 setup_logger(logger, LOG_FILE_PATH)
 
+print("Finished setting up logger")
+print("log location: ", LOG_FILE_PATH)
+
+logger.info("Initialized Logger")
+
 # Initialize the key-value store
 kv_store = initialize_kv_store(DATA_FILE_PATH)
 
@@ -107,8 +123,13 @@ def put():
     """
     # Get the key and value from the request body
     data = request.get_json()
-    key = data.get("key")
+    #key = data.get("key")
+    key = request.args.get("key")
     value = data.get("value")
+
+    # if value is None:
+    #     logger.error("Invalid PUT request: Missing value")
+    #     return jsonify({"status": "error", "message": "Invalid request"}), 400
 
     # Check if the key or value is missing
     # If so, return an error response
@@ -130,7 +151,8 @@ def put():
     # Log the PUT operation
     logger.info(f"PUT operation - Key: {key}, Value: {value}")
 
-    return jsonify({"status": "success"})
+    return jsonify({"status": "success", "instance": INSTANCE_ID}), 200
+    #return jsonify({"status": "success"})
 
 
 # Define a route for GET requests
@@ -147,10 +169,10 @@ def get():
     if key in kv_store:
         # Log the GET operation
         logger.info(f"GET operation - Key: {key}, Value: {kv_store[key]}")
-        return jsonify({"status": "success", "value": kv_store[key]})
+        return jsonify({"status": "success", "value": kv_store[key], "instance": INSTANCE_ID})
     else:
         # Log the error
-        logger.error(f"GET operation - Key not found: {key}")
+        logger.error(f"GET operation - Key not found: {key}; instance {INSTANCE_ID}")
         return jsonify({"status": "error", "message": "Key not found"}), 404
 
 
@@ -178,6 +200,10 @@ def delete():
         return jsonify({"status": "error", "message": "Key not found"}), 404
 
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return "OK", 200
+
 if __name__ == "__main__":
     start_save_thread()
-    app.run(host=HOST, port=PORT)
+    app.run(host="0.0.0.0", port=8080)

@@ -4,12 +4,18 @@
 
 This project is a simple key-value store server built using Flask, designed to handle basic CRUD (Create, Read, Update, Delete) operations on key-value pairs. It provides an HTTP API that allows clients to interact with the server.
 
-Pers
+Additionally, it includes a set of test cases to verify the functionality of the server as well as the necessary infrastructure to run mulitple instances of the server in parallel using Docker and consistant hashing.
 
 ## Files
 
 - `key_value_server.py`: The main Flask application file that defines the server routes and operations.
 - `tests.py`: Contains a set of test cases to verify the functionality of the server.
+- `Dockerfile`: Defines the Docker image for the server.
+- `requirements.txt`: Contains a list of dependencies for the project.
+-  `haproxy.cfg`: Defines the HAProxy configuration for the load balancer.
+- `locustfile.py`: Contains a set of load tests for the server.
+- `locust_results.py`: Contains a set of functions to process the results of the load tests.
+- `performance.sh`: A bash script that runs the load tests and processes the results.
 
 ## Requirements
 
@@ -49,34 +55,17 @@ This project includes data persistence using a JSON file (defined by `PERSISTENC
 This project includes a Dockerfile that can be used to build a Docker image for the server.  To build the image, run the following command:
 
 ```bash
-docker build -t key-value-server .
+docker build -t key-value-store .
 ```
 
-To run the server in a Docker container, run the following command:
+## HAProxy
+
+The HAProxy load balancer is configured to run on port 80.  To start the load balancer, run the following command:
 
 ```bash
-docker run -p 8080:8080 key-value-server
+ docker run -d -v $(pwd)/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro -p 80:80 -p 8404:8404 haproxy:latest
 ```
 
-### Sample Requests
+The default configuration is set to work with up to 3 instances. 
 
-Once the server is running, you can interact with it using the following sample requests:
 
-#### Create a key-value pair
-
-```bash
-curl -X POST -H "Content-Type: application/json" -d '{"key": "new_key", "value": "new_value"}' http://localhost:8080/put
-
-```
-#### Read a key-value pair
-
-```bash
-curl http://localhost:8080/get?key=new_key
-```
-
-In order to stop and remove the container, run the following commands:
-
-```bash
-docker stop <container_id>
-docker rm <container_id>
-```
