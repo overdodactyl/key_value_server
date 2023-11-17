@@ -3,6 +3,7 @@ import requests
 key = "myKey"
 value = "myValue"
 server_url = "http://127.0.0.1:8080"
+server_url= "http://localhost"
 
 # For PUT operation, FastAPI expects the 'key' as a query parameter and 'value' in the JSON body
 put_response = requests.post(f'{server_url}/put', params={'key': key}, json={'value': value})

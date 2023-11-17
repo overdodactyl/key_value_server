@@ -1,5 +1,5 @@
-# Use a lightweight Linux distribution with Python installed
-FROM python:3.9-alpine
+# Use a specific version of Alpine Linux
+FROM python:3.9-alpine3.14
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -7,23 +7,31 @@ WORKDIR /app
 # Install gcc, Python development headers, Linux headers, and standard C library headers
 RUN apk add --no-cache gcc python3-dev linux-headers musl-dev
 
-# Install dependencies
-COPY requirements.txt /app
-RUN pip install -r requirements.txt
+# Create a non-root user
+RUN adduser -D myuser
 
-# Copy your application files into the container
+# Set ownership of the application directory to the non-root user
+RUN chown -R myuser:myuser /app
+
+# Install dependencies
+COPY requirements_kv_server.txt /app
+RUN pip install -r requirements_kv_server.txt
+
 COPY key_value_server.py /app
 
-# Create directories for logs and data
-RUN mkdir /app/logs
-RUN mkdir /app/data
-
-# Set environment variable
-ENV INSTANCE_ID=Instance1
+# Combine commands to reduce layers
+RUN mkdir -p /app/logs /app/data && \
+    chmod 777 /app/logs && \
+    mkdir -p /app/data && \
+    chmod 777 /app/data && \
+    apk del gcc python3-dev linux-headers musl-dev && \
+    rm -rf /var/cache/apk/*
 
 # Expose the port your server is listening on
 EXPOSE 8080
 
-# Define the command to run when the container starts
+# Switch to the non-root user
+USER myuser
+
 # We use Uvicorn to serve the FastAPI app
 CMD ["uvicorn", "key_value_server:app", "--host", "0.0.0.0", "--port", "8080"]
