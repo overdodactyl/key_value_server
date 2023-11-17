@@ -1,7 +1,7 @@
 import requests
 
 key = "myKey"
-value = "myValue"
+value = "myValue2"
 server_url = "http://127.0.0.1:8080"
 server_url= "http://localhost"
 
