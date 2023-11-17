@@ -25,4 +25,5 @@ ENV INSTANCE_ID=Instance1
 EXPOSE 8080
 
 # Define the command to run when the container starts
-CMD ["python", "-u", "key_value_server.py"]
+# We use Uvicorn to serve the FastAPI app
+CMD ["uvicorn", "key_value_server:app", "--host", "0.0.0.0", "--port", "8080"]
