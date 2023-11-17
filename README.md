@@ -41,4 +41,32 @@ The server will be running on port 8080 on localhost by default.  You can change
 
 To run multiple instances of the server in parallel, you can use Docker and HAProxy.
 
-The key-value server has been posted to DockerHub.  The `shell/benchmark.sh` script launches HAProxy, the three servers, and runs the benchmarking code. 
+The key-value server has been posted to DockerHub.  The `shell/benchmark.sh` script launches HAProxy, the three servers, and runs the benchmarking code.
+
+## Full Example
+
+Clone the repository:
+
+```bash
+git clone https://github.com/overdodactyl/key_value_server
+```
+
+Set up a virtual environment and install dependencies:
+
+```bash
+python3 -m venv env
+source env/bin/activate
+pip install -r requirements.txt
+```
+
+Start the server and run an initial test:
+
+```bash
+shell/benchmark.sh
+```
+
+Run additional tests:
+
+```bash
+python benchmark.py
+```
