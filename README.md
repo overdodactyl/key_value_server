@@ -8,19 +8,18 @@ Additionally, it includes a set of test cases to verify the functionality of the
 
 ## Files
 
-- `key_value_server.py`: The main Flask application file that defines the server routes and operations.
-- `tests.py`: Contains a set of test cases to verify the functionality of the server.
+- `key_value_server.py`: The main FastAPI application file that defines the server routes and operations.
+- `tests.py`: Contains a few test cases to verify the functionality of the server and show sample usage.
 - `Dockerfile`: Defines the Docker image for the server.
 - `requirements.txt`: Contains a list of dependencies for the project.
--  `haproxy.cfg`: Defines the HAProxy configuration for the load balancer.
-- `locustfile.py`: Contains a set of load tests for the server.
-- `locust_results.py`: Contains a set of functions to process the results of the load tests.
-- `performance.sh`: A bash script that runs the load tests and processes the results.
+- `requirements_kv_server.txt`: Contains a list of dependencies for the server only.
+- `haproxy.cfg`: Defines the HAProxy configuration for the load balancer.
+- `shell/build.sh`: Builds the Docker image for the server and posts it to DockerHub.
+- `shell/benchmark.sh`: Runs a benchmark test on the server.
 
 ## Requirements
 
 This project was written using Python 3.9.17.  See `requirements.txt` for a list of dependencies.
-
 
 You can install these dependencies using pip:
 
@@ -38,38 +37,8 @@ python key_value_server.py
 
 The server will be running on port 8080 on localhost by default.  You can change this by setting the `PORT` and `HOST` variables.
 
-## Running Tests
+## Multiple Instances and Benchmarking
 
-To run the test suite, run the following command:
+To run multiple instances of the server in parallel, you can use Docker and HAProxy.
 
-```bash
-python tests.py
-```
-
-## Notes
-
-This project includes data persistence using a JSON file (defined by `PERSISTENCE_INTERVAL_SECONDS`, `DATA_DIRECTORY`, and `DATA_FILE_PATH`) to store the key-value pairs. The server periodically saves the data to the file, ensuring that data is retained even if the server is restarted.
-
-## Dockerization
-
-This project includes a Dockerfile that can be used to build a Docker image for the server.  To build the image, run the following command:
-
-```bash
-docker build -t key-value-store .
-```
-
-## HAProxy
-
-The HAProxy load balancer is configured to run on port 80.  To start the load balancer, run the following command:
-
-```bash
- docker run -d -v $(pwd)/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro -p 80:80 -p 8404:8404 haproxy:latest
-```
-
-The default configuration is set to work with up to 3 instances. 
-
-## Examples
-
-For examples of how to run the server and load balancer, see `performance.sh`.
-
-For examples of how to call the API, see `tests.py`.
+The key-value server has been posted to DockerHub.  The `shell/benchmark.sh` script launches HAProxy, the three servers, and runs the benchmarking code. 
