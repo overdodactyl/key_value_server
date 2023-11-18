@@ -1,9 +1,11 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import logging
 import ujson as json
 import os
 import asyncio
+from fastapi.responses import ORJSONResponse
+from fastapi.middleware.gzip import GZipMiddleware
 
 # Global constants
 DATA_DIRECTORY = "data"
@@ -13,34 +15,39 @@ PERSISTENCE_INTERVAL_SECONDS = 600
 PORT = int(os.environ.get("KV_STORE_PORT", 8080))
 HOST = "localhost"
 
-
 # Setup logger
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[logging.FileHandler(LOG_FILE_PATH), logging.StreamHandler()]
 )
 
 logger = logging.getLogger("key_value_server")
 
-
+# Load initial data
 try:
     with open(DATA_FILE_PATH, "r") as data_file:
         kv_store = json.load(data_file)
 except FileNotFoundError:
     kv_store = {}
 
+# Response models
 class Item(BaseModel):
     value: str
 
+class KeyValueResponse(BaseModel):
+    status: str
+    value: str = None
 
-app = FastAPI()
+class SuccessResponse(BaseModel):
+    status: str
 
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(save_data_to_disk())
+# FastAPI app with ORJSONResponse for faster JSON handling and GZipMiddleware for compression
+app = FastAPI(default_response_class=ORJSONResponse)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-@app.post("/put")
+
+@app.post("/put", response_model=SuccessResponse)
 async def put(key: str, item: Item):
     if key is None or item.value is None:
         logger.error("Invalid PUT request: Missing key or value")
@@ -49,17 +56,15 @@ async def put(key: str, item: Item):
     kv_store[key] = item.value
     return {"status": "success"}
 
-
-@app.get("/get")
+@app.get("/get", response_model=KeyValueResponse)
 async def get(key: str):
     if key not in kv_store:
         logger.error(f"GET operation - Key not found: {key}")
         raise HTTPException(status_code=404, detail="Key not found")
 
-    return {"value": kv_store[key]}
+    return {"status": "success", "value": kv_store[key]}
 
-
-@app.delete("/del")
+@app.delete("/del", response_model=SuccessResponse)
 async def delete(key: str):
     if key not in kv_store:
         logger.error(f"DEL operation - Key not found: {key}")
@@ -68,18 +73,20 @@ async def delete(key: str):
     del kv_store[key]
     return {"status": "success"}
 
-@app.get('/health')
-async def health_check():
-    return "OK"
 
-@app.on_event("startup")
-async def startup_event():
+# Lifespan event handlers
+async def on_startup():
+    # Your startup logic here
     asyncio.create_task(save_data_to_disk())
 
-@app.on_event("shutdown")
-async def shutdown_event():
+async def on_shutdown():
+    # Your shutdown logic here
     logger.info("Server is shutting down. Saving data...")
-    await save_data_now()  # Function to save data immediately
+    await save_data_now()
+
+app.router.add_event_handler("startup", on_startup)
+app.router.add_event_handler("shutdown", on_shutdown)
+
 
 async def save_data_now():
     try:
@@ -95,4 +102,4 @@ async def save_data_to_disk():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=HOST, port=PORT)
+    uvicorn.run(app, host=HOST, port=PORT, http="h11", loop="asyncio", log_level="warning")

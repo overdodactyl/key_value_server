@@ -1,0 +1,32 @@
+# Start with the official Go image for building the application
+FROM golang:1.17-alpine as builder
+
+# Set the working directory in the builder stage
+WORKDIR /app
+
+# Copy go.mod file to download dependencies. Only copy go.sum if it exists.
+COPY go.mod ./
+COPY go.sum* ./
+RUN go mod download
+
+# Copy the source code
+COPY . .
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o key_value_server .
+
+# Use a minimal alpine image for the final image
+FROM alpine:latest
+WORKDIR /root/
+
+# Add certificates for HTTPS (optional, remove if not needed)
+RUN apk --no-cache add ca-certificates
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/key_value_server .
+
+# Expose the port your server is listening on
+EXPOSE 8080
+
+# Run the binary
+CMD ["./key_value_server"]
